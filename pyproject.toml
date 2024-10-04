@@ -11,9 +11,9 @@ requires-python = ">=3.9"
 dependencies = [
     "langgraph>=0.2.6",
     "python-dotenv>=1.0.1",
-    "scrapegraphai>=1.25.2"
+    "scrapegraphai>=1.25.2",
+    "playwright>=1.37.0"
 ]
-
 
 [project.optional-dependencies]
 dev = ["mypy>=1.11.1", "ruff>=0.6.1"]
@@ -27,7 +27,6 @@ packages = ["langgraph.templates.agent", "agent"]
 [tool.setuptools.package-dir]
 "langgraph.templates.agent" = "src/agent"
 "agent" = "src/agent"
-
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
