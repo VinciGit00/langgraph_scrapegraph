@@ -2,6 +2,11 @@
 
 <p align="center"> <img src="https://github.com/ScrapeGraphAI/Scrapegraph-ai/blob/main/docs/assets/scrapegraphai_logo.png" alt="LangGraph Agent Logo" style="width: 50%;"> </p>
 
+## Video demonstration
+<video controls>
+  <source src="assets/langraph.mp4" type="video/mp4">
+</video>
+
 ## Overview
 
 This repository provides a powerful agent that leverages the LangGraph framework and integrates with ScrapeGraph to build intelligent web scraping and data extraction pipelines. By combining the strengths of LangGraph's modular AI-driven workflows with ScrapeGraph's web scraping capabilities, this agent enables seamless automation for data collection, processing, and analysis.
