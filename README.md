@@ -3,9 +3,7 @@
 <p align="center"> <img src="https://github.com/ScrapeGraphAI/Scrapegraph-ai/blob/main/docs/assets/scrapegraphai_logo.png" alt="LangGraph Agent Logo" style="width: 50%;"> </p>
 
 ## Video demonstration
-<video controls>
-  <source src="assets/langraph.gif" type="video/mp4">
-</video>
+![langraph](https://github.com/user-attachments/assets/0be5b1d3-a57f-47ef-b79d-aadaadd6bfed)
 
 ## Overview
 
