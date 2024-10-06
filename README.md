@@ -4,7 +4,7 @@
 
 ## Video demonstration
 <video controls>
-  <source src="assets/langraph.mp4" type="video/mp4">
+  <source src="assets/langraph.gif" type="video/mp4">
 </video>
 
 ## Overview
