@@ -2,49 +2,74 @@
 This is the main entry point for the AI.
 It defines the workflow graph and the entry point for the agent.
 """
-# pylint: disable=line-too-long, unused-import
+import os
+import getpass
 import json
-from typing import cast
-
-from langchain_core.messages import AIMessage, ToolMessage
-from langgraph.graph import StateGraph, END
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langgraph.graph import MessagesState
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
-from research_canvas.state import AgentState
-from research_canvas.download import download_node
-from research_canvas.chat import chat_node
-from research_canvas.search import search_node
-from research_canvas.delete import delete_node, perform_delete_node
+from langgraph.graph import START, StateGraph
+from langgraph.prebuilt import tools_condition, ToolNode
 
-# Define a new graph
-workflow = StateGraph(AgentState)
-workflow.add_node("download", download_node)
-workflow.add_node("chat_node", chat_node)
-workflow.add_node("search_node", search_node)
-workflow.add_node("delete_node", delete_node)
-workflow.add_node("perform_delete_node", perform_delete_node)
+load_dotenv()
 
-def route(state):
-    """Route after the chat node."""
+def smart_scraper_func(prompt: str, source: str):
+    """
+    Performs intelligent scraping using SmartScraperGraph.
 
-    messages = state.get("messages", [])
-    if messages and isinstance(messages[-1], AIMessage):
-        ai_message = cast(AIMessage, messages[-1])
+    Parameters:
+    prompt (str): The prompt to use for scraping.
+    source (str): The source from which to perform scraping.
 
-        if ai_message.tool_calls and ai_message.tool_calls[0]["name"] == "Search":
-            return "search_node"
-        if ai_message.tool_calls and ai_message.tool_calls[0]["name"] == "DeleteResources":
-            return "delete_node"
-    if messages and isinstance(messages[-1], ToolMessage):
-        return "chat_node"
+    Returns:
+    dict: The result of the scraping in JSON format.
+    """
+    from scrapegraph_py import SyncClient
+    from scrapegraph_py.logger import get_logger
 
-    return END
+    get_logger(level="DEBUG")
 
+    # Initialize the client
+    sgai_client = SyncClient(api_key=os.getenv("SCRAPEGRAPH_API_KEY"))
 
-memory = MemorySaver()
-workflow.set_entry_point("download")
-workflow.add_edge("download", "chat_node")
-workflow.add_conditional_edges("chat_node", route, ["search_node", "chat_node", "delete_node", END])
-workflow.add_edge("delete_node", "perform_delete_node")
-workflow.add_edge("perform_delete_node", "chat_node")
-workflow.add_edge("search_node", "download")
-graph = workflow.compile(checkpointer=memory, interrupt_after=["delete_node"])
+    # SmartScraper request
+    response = sgai_client.smartscraper(
+        website_url=source,
+        user_prompt=prompt,
+    )
+
+    # Print the response
+    print(f"Request ID: {response['request_id']}")
+    print(f"Result: {response['result']}")
+
+    sgai_client.close()
+
+    return response
+
+tools = [smart_scraper_func]
+llm = ChatOpenAI(model="gpt-4", api_key=os.getenv("OPENAI_API_KEY"))
+llm_with_tools = llm.bind_tools(tools)
+
+sys_msg = SystemMessage(content="You are a helpful assistant tasked with performing scraping scripts with scrapegraphai. Use the tool asked from the user")
+
+# Node
+def assistant(state: MessagesState):
+    return {"messages": [llm_with_tools.invoke([sys_msg] + state["messages"])]}
+
+# Build graph
+builder = StateGraph(MessagesState)
+builder.add_node("assistant", assistant)
+builder.add_node("tools", ToolNode(tools))
+builder.add_edge(START, "assistant")
+builder.add_conditional_edges(
+    "assistant",
+    # If the latest message (result) from assistant is a tool call -> tools_condition routes to tools
+    # If the latest message (result) from assistant is a not a tool call -> tools_condition routes to END
+    tools_condition,
+)
+builder.add_edge("tools", "assistant")
+
+# Compile graph
+graph = builder.compile()
